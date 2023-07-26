@@ -1,39 +1,52 @@
 pipeline {
     agent any
-    tools{
-        maven 'maven_3_5_0'
-    }
-    stages{
-        stage('Build Maven'){
-            steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Java-Techie-jt/devops-automation']]])
-                sh 'mvn clean install'
-            }
-        }
-        stage('Build docker image'){
-            steps{
-                script{
-                    sh 'docker build -t javatechie/devops-integration .'
-                }
-            }
-        }
-        stage('Push image to Hub'){
-            steps{
-                script{
-                   withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
-                   sh 'docker login -u javatechie -p ${dockerhubpwd}'
 
-}
-                   sh 'docker push javatechie/devops-integration'
-                }
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "maven_3.8.5"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Get some code from a GitHub repository
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/TEJASRM1/devops-masterclass.git']])
+
+                // Run Maven on a Unix agent.
+                sh "mvn -Dmaven.test.failure.ignore=true clean package"
+
+
             }
-        }
-        stage('Deploy to k8s'){
+
+          
+            }
+             stage('Build docker image'){
             steps{
                 script{
-                    kubernetesDeploy (configs: 'deploymentservice.yaml',kubeconfigId: 'k8sconfigpwd')
+                    sh 'docker build -t rmtejas1/devops-integration .'
                 }
             }
         }
+        
+         stage('Push image to Hub'){
+            steps{
+                script{
+                   withCredentials([string(credentialsId: 'docker-1key', variable: 'dockerhub')]) {
+                   sh 'docker login -u rmtejas1 -p ${dockerhub}'
+
+ 
+
+                   }
+                   sh 'docker push rmtejas1/devops-integration'
+                }
+            }
+        }
+        
+        stage('deploy to remote server'){
+            steps{
+                ansiblePlaybook credentialsId: 'myansibleid', installation: 'ansible',disableHostKeyChecking:  true ,inventory: 'inventory', playbook: 'playbook.yml'
+            }
+        }
+        
+        }
     }
-}
