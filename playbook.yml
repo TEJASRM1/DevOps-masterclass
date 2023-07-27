@@ -10,4 +10,4 @@
         state: started
         auto_remove: true
         ports:
-          - "9000:8081"
+          - "8082:8081"
